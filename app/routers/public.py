@@ -16,17 +16,14 @@ from app.errors import ApiError
 from app.http_cache import con_cache
 from app.models import Certificate, Profile, Project, ProjectTag, TechStackItem
 from app.pagination import Clave, paginar
+from app.routers.comunes import CURSOR, ERROR_404, ERROR_422, LIMITE
 from app.schemas import (
-    CertificateOut, Envelope, ErrorEnvelope, Page, ProfileOut, ProjectCardOut,
+    CertificateOut, Envelope, Page, ProfileOut, ProjectCardOut,
     ProjectDetailOut, StackCategory, TechStackOut,
 )
 
 router = APIRouter(prefix="/api/v1/public", tags=["Lecturas públicas"])
 
-LIMITE = Query(20, ge=1, le=50, description="Elementos por página (1 a 50)")
-CURSOR = Query(None, description="Usa el next_cursor de la respuesta anterior")
-ERROR_422 = {422: {"model": ErrorEnvelope, "description": "Parámetros inválidos (limit, cursor, filtros)"}}
-ERROR_404 = {404: {"model": ErrorEnvelope, "description": "No encontrado"}}
 
 
 # ------------------------------------------------------------------ 9. proyectos (lista)

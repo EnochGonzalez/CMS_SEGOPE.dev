@@ -132,3 +132,14 @@ class Profile(Base):
     phone: Mapped[str | None] = mapped_column(String(30))
     github_url: Mapped[str | None] = mapped_column(String(300))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora_utc, onupdate=ahora_utc)
+
+
+class IdempotencyKey(Base):
+    """Respuesta guardada de una operación que llegó con Idempotency-Key (se conserva 24 h)."""
+    __tablename__ = "idempotency_keys"
+
+    key: Mapped[str] = mapped_column(String(128), primary_key=True)
+    fingerprint: Mapped[str] = mapped_column(String(64))      # huella de método + ruta + cuerpo
+    status_code: Mapped[int] = mapped_column(Integer)
+    body: Mapped[str] = mapped_column(Text)                   # la respuesta original, en JSON
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora_utc)

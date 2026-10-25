@@ -1,8 +1,9 @@
 # Mismas librerías que la práctica guiada de FastAPI (fastapi, uvicorn, httpie, requests, httpx),
-# más SQLAlchemy (base de datos) y pytest (pruebas automáticas).
+# más SQLAlchemy (base de datos), PyJWT (tokens) y pytest (pruebas automáticas).
 fastapi
 uvicorn
 sqlalchemy>=2.0
+pyjwt
 httpie
 requests
 httpx

@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from app import models  # noqa: F401  (registra las tablas en Base.metadata)
 from app.database import Base, engine
 from app.errors import registrar_manejadores
-from app.routers import public
+from app.routers import auth, projects, public
 
 
 @asynccontextmanager
@@ -25,7 +25,11 @@ Implementa la *Especificación de Arquitectura y Contrato de Interfaz* de la mat
 Todas las respuestas exitosas usan `{ status, message, data }` y todos los errores
 `{ status, code, message, details[] }`.
 
-**Bloque 1 (este):** lecturas públicas — endpoints 9, 10, 12, 16 y 19.
+**Bloque 1:** lecturas públicas — endpoints 9, 10, 12, 16 y 19.
+**Bloque 2 (este):** login y administración de proyectos — endpoints 1 a 8.
+
+Para probar la administración desde esta página: ejecuta `POST /api/v1/auth/login`, copia el
+`access_token` y pégalo en el botón **Authorize**.
 """
 
 app = FastAPI(
@@ -33,9 +37,15 @@ app = FastAPI(
     version="2.0.0",
     description=DESCRIPCION,
     lifespan=lifespan,
-    openapi_tags=[{"name": "Lecturas públicas", "description": "Sin autenticación. Con ETag y Cache-Control (max-age 60 s)."}],
+    openapi_tags=[
+        {"name": "Autenticación", "description": "Login del administrador (token JWT Bearer)."},
+        {"name": "Proyectos (administración)", "description": "Requieren token. Ciclo de vida: BORRADOR → PUBLICADO → ARCHIVADO."},
+        {"name": "Lecturas públicas", "description": "Sin autenticación. Con ETag y Cache-Control (max-age 60 s)."},
+    ],
 )
 registrar_manejadores(app)
+app.include_router(auth.router)
+app.include_router(projects.router)
 app.include_router(public.router)
 
 

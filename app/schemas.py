@@ -222,3 +222,80 @@ class ProfileOut(_Out):
     phone: str | None
     github_url: str | None
     updated_at: FechaHoraUTC
+
+
+# ================================================================= BLOQUE 2: login y administración
+class LoginIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: Annotated[str, StringConstraints(max_length=120, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
+    password: Annotated[str, StringConstraints(min_length=8, max_length=128)]
+
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: Literal["Bearer"] = "Bearer"
+    expires_in: int                                   # segundos de vigencia
+
+
+class ProjectCreatedOut(_Out):
+    """Endpoint 2."""
+    project_id: str
+    status: ProjectStatus
+    slug: str
+    created_at: FechaHoraUTC
+
+
+class ProjectAdminItemOut(_Out):
+    """Una fila del listado administrativo (endpoint 3): incluye borradores y archivados."""
+    project_id: str
+    title: str
+    slug: str
+    status: ProjectStatus
+    project_date: date | None
+    is_featured: bool
+    updated_at: FechaHoraUTC
+
+
+class ProjectAdminDetailOut(_Out):
+    """Endpoint 4: todos los campos del proyecto, en cualquier estado."""
+    project_id: str
+    title: str
+    slug: str
+    short_description: str | None
+    description: str | None
+    project_date: date | None
+    stack_ids: list[str]
+    tech_stack: list[TechStackBriefOut]
+    tags: list[str]
+    repo_url: str | None
+    demo_url: str | None
+    is_featured: bool
+    status: ProjectStatus
+    created_at: FechaHoraUTC
+    updated_at: FechaHoraUTC
+    published_at: FechaHoraUTC | None
+
+
+class ProjectUpdatedOut(BaseModel):
+    """Endpoint 5."""
+    project_id: str
+    status: ProjectStatus
+    updated_at: FechaHoraUTC
+    recompilation_triggered: bool
+
+
+class ProjectPublishedOut(BaseModel):
+    """Endpoint 6."""
+    project_id: str
+    status: ProjectStatus
+    published_at: FechaHoraUTC
+    recompilation_triggered: bool
+
+
+class ProjectArchivedOut(BaseModel):
+    """Endpoint 7."""
+    project_id: str
+    status: ProjectStatus
+    updated_at: FechaHoraUTC
+    recompilation_triggered: bool

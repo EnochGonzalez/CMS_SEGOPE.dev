@@ -8,22 +8,25 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 class ApiError(Exception):
     """Error de negocio con código HTTP propio (404, 409, 422...)."""
 
-    def __init__(self, status_code: int, code: str, message: str, details: list[dict] | None = None):
+    def __init__(self, status_code: int, code: str, message: str,
+                 details: list[dict] | None = None, headers: dict[str, str] | None = None):
         self.status_code = status_code
         self.code = code
         self.message = message
         self.details = details or []
+        self.headers = headers
 
 
-def _respuesta(status_code: int, code: str, message: str, details: list[dict] | None = None) -> JSONResponse:
+def _respuesta(status_code: int, code: str, message: str, details: list[dict] | None = None,
+               headers: dict[str, str] | None = None) -> JSONResponse:
     cuerpo = {"status": "error", "code": code, "message": message, "details": details or []}
-    return JSONResponse(status_code=status_code, content=cuerpo)
+    return JSONResponse(status_code=status_code, content=cuerpo, headers=headers)
 
 
 def registrar_manejadores(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def _error_de_negocio(request: Request, exc: ApiError):
-        return _respuesta(exc.status_code, exc.code, exc.message, exc.details)
+        return _respuesta(exc.status_code, exc.code, exc.message, exc.details, exc.headers)
 
     @app.exception_handler(RequestValidationError)
     async def _error_de_validacion(request: Request, exc: RequestValidationError):

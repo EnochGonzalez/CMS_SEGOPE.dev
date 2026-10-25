@@ -198,7 +198,10 @@ def test_ruta_inexistente_usa_el_mismo_formato_de_error(client):
     assert r.status_code == 404 and r.json()["code"] == "NOT_FOUND" and r.json()["status"] == "error"
 
 
-def test_documentacion_openapi_lista_los_cinco_endpoints(client):
+def test_documentacion_openapi_lista_todas_las_rutas(client):
     assert client.get("/docs").status_code == 200
     rutas = set(client.get("/openapi.json").json()["paths"])
-    assert rutas == {f"{RUTA}{r}" for r in ["/projects", "/projects/{slug}", "/certificates", "/tech-stack", "/profile"]}
+    publicas = {f"{RUTA}{r}" for r in ["/projects", "/projects/{slug}", "/certificates", "/tech-stack", "/profile"]}
+    admin = {"/api/v1/auth/login", "/api/v1/projects", "/api/v1/projects/{project_id}",
+             "/api/v1/projects/{project_id}/publish", "/api/v1/projects/{project_id}/archive"}
+    assert rutas == publicas | admin
