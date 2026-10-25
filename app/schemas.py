@@ -42,6 +42,8 @@ FechaHoraUTC = Annotated[datetime, PlainSerializer(_a_iso_utc, return_type=str, 
 Uuid7 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")]
 Slug = Annotated[str, StringConstraints(max_length=80, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")]
 UrlHttps = Annotated[str, StringConstraints(max_length=300, pattern=r"^https://\S+$")]
+# URL de un archivo (PDF, imagen): https, o http solo si apunta a tu propia computadora (para desarrollar).
+UrlArchivo = Annotated[str, StringConstraints(max_length=300, pattern=r"^(https://|http://(localhost|127\.0\.0\.1)(:\d+)?/)\S+$")]
 Titulo = Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=120)]
 Etiqueta = Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=30)]
 
@@ -117,8 +119,8 @@ class CertificateIn(BaseModel):
     title: Titulo
     issuer: Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=80)]
     issued_at: date
-    pdf_url: UrlHttps
-    image_url: UrlHttps
+    pdf_url: UrlArchivo
+    image_url: UrlArchivo
 
     @field_validator("issued_at")
     @classmethod
@@ -133,9 +135,14 @@ class TechStackIn(BaseModel):
 
     name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=40)]
     category: StackCategory
-    logo_url: UrlHttps | None = None
+    logo_url: UrlArchivo | None = None
     show_in_profile: bool = False
     display_order: Annotated[int, Field(ge=1)] | None = None   # si se omite, la API asigna la última posición
+
+
+class TechStackUpdateIn(TechStackIn):
+    """PUT reemplaza el recurso completo: show_in_profile es obligatorio."""
+    show_in_profile: bool
 
 
 class ProfileIn(BaseModel):
@@ -145,7 +152,7 @@ class ProfileIn(BaseModel):
     job_title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=80)]
     tagline: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=160)]
     bio: Annotated[str, StringConstraints(strip_whitespace=True, min_length=20, max_length=1000)]
-    photo_url: UrlHttps | None = None
+    photo_url: UrlArchivo | None = None
     email: Annotated[str, StringConstraints(max_length=120, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
     phone: Annotated[str, StringConstraints(pattern=r"^\+?[0-9][0-9 -]{6,18}$")] | None = None
     github_url: Annotated[str, StringConstraints(pattern=r"^https://github\.com/[A-Za-z0-9-]+/?$")] | None = None
@@ -299,3 +306,74 @@ class ProjectArchivedOut(BaseModel):
     status: ProjectStatus
     updated_at: FechaHoraUTC
     recompilation_triggered: bool
+
+
+# ================================================================= BLOQUE 3: certificados, catálogo, perfil y archivos
+class FilePurpose(str, Enum):
+    CERTIFICATE_PDF = "CERTIFICATE_PDF"
+    CERTIFICATE_IMAGE = "CERTIFICATE_IMAGE"
+    STACK_LOGO = "STACK_LOGO"
+    PROFILE_PHOTO = "PROFILE_PHOTO"
+
+
+class CertificateCreatedOut(_Out):
+    """Endpoint 11."""
+    certificate_id: str
+    title: str
+    issuer: str
+    issued_at: date
+    created_at: FechaHoraUTC
+    recompilation_triggered: bool
+
+
+class CertificateUpdatedOut(BaseModel):
+    """Endpoint 13."""
+    certificate_id: str
+    updated_at: FechaHoraUTC
+    recompilation_triggered: bool
+
+
+class DeletedOut(BaseModel):
+    """Endpoints 14 y 18: eliminación con aviso al pipeline (certificate_id o stack_id, según el caso)."""
+    deleted: Literal[True] = True
+    recompilation_triggered: bool
+
+
+class CertificateDeletedOut(DeletedOut):
+    certificate_id: str
+
+
+class TechStackCreatedOut(_Out):
+    """Endpoint 15."""
+    stack_id: str
+    name: str
+    category: StackCategory
+    show_in_profile: bool
+    display_order: int
+    created_at: FechaHoraUTC
+    recompilation_triggered: bool
+
+
+class TechStackUpdatedOut(BaseModel):
+    """Endpoint 17."""
+    stack_id: str
+    updated_at: FechaHoraUTC
+    recompilation_triggered: bool
+
+
+class TechStackDeletedOut(DeletedOut):
+    stack_id: str
+
+
+class ProfileUpdatedOut(BaseModel):
+    """Endpoint 20."""
+    profile_id: str
+    updated_at: FechaHoraUTC
+    recompilation_triggered: bool
+
+
+class FileUploadedOut(BaseModel):
+    """Endpoint 21."""
+    url: str
+    mime_type: str
+    size_bytes: int

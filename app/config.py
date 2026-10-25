@@ -49,3 +49,11 @@ LOGIN_VENTANA_SEGUNDOS = int(os.getenv("LOGIN_VENTANA_SEGUNDOS", "900"))     # 1
 
 # Cuánto tiempo se recuerda una Idempotency-Key
 IDEMPOTENCIA_HORAS = 24
+
+# ---------------------------------------------------------------- archivos subidos (Bloque 3)
+# El almacén local guarda los archivos en FILES_DIR y la API los sirve en FILES_PUBLIC_URL.
+# En producción se cambia por un servicio externo (el almacén es intercambiable: app/storage.py).
+FILES_DIR = Path(os.getenv("FILES_DIR", str(RAIZ / "uploads")))
+FILES_PUBLIC_URL = os.getenv("FILES_PUBLIC_URL", "http://localhost:8000/media").rstrip("/")
+MAX_PDF_BYTES = 5 * 1024 * 1024          # 5 242 880
+MAX_IMAGEN_BYTES = 2 * 1024 * 1024       # 2 097 152

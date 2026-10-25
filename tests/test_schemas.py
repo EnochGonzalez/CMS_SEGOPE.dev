@@ -7,7 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.ids import nuevo_id, uuid7
-from app.schemas import CertificateIn, ProfileIn, ProjectCreateIn, ProjectUpdateIn, TechStackIn
+from app.schemas import CertificateIn, ProfileIn, ProjectCreateIn, ProjectUpdateIn, TechStackIn, TechStackUpdateIn
 from app.seed import CATALOGO, CERTIFICADOS, PERFIL, PROYECTOS, SITE_BASE_URL
 
 UUID_VALIDO = "0192a3c2-7e01-7f12-8a23-1b34c45d5678"
@@ -125,3 +125,27 @@ def test_los_datos_sembrados_cumplen_el_diccionario_de_tipos():
                         description=p["description"], project_date=date.fromisoformat(p["project_date"]),
                         tags=p["tags"], demo_url=p["demo_url"])
         assert any(nombre in p["stack"] for nombre, categoria, _, _ in CATALOGO if categoria == "LENGUAJE")  # contrato: ≥1 lenguaje
+
+
+# ------------------------------------------------------------------ Bloque 3: URLs de archivos
+@pytest.mark.parametrize("url", ["https://sitio.com/a.pdf", "http://localhost:8000/media/a.pdf", "http://127.0.0.1:8000/media/a.pdf", "http://localhost/a.pdf"])
+def test_urls_de_archivo_aceptadas(url):
+    assert _certificado(pdf_url=url).pdf_url == url
+
+
+@pytest.mark.parametrize("url", ["http://sitio.com/a.pdf", "http://localhost.evil.com/a.pdf", "http://localhost:80evil/a.pdf",
+                                 "http://localhostx/a.pdf", "ftp://localhost/a.pdf", "https://con espacio.com/a.pdf"])
+def test_urls_de_archivo_rechazadas(url):
+    with pytest.raises(ValidationError):
+        _certificado(pdf_url=url)
+
+
+def test_demo_y_repo_siguen_exigiendo_https_aunque_sea_localhost():
+    with pytest.raises(ValidationError):
+        ProjectCreateIn(**MINIMO, demo_url="http://localhost:3000/")
+
+
+def test_tech_stack_update_exige_show_in_profile():
+    with pytest.raises(ValidationError):
+        TechStackUpdateIn(name="Kotlin", category="LENGUAJE")
+    assert TechStackUpdateIn(name="Kotlin", category="LENGUAJE", show_in_profile=False).display_order is None

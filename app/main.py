@@ -5,11 +5,12 @@ Arranque:  python -m uvicorn app.main:app --reload      (documentación en /docs
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
-from app import models  # noqa: F401  (registra las tablas en Base.metadata)
+from app import config, models  # noqa: F401  (models registra las tablas en Base.metadata)
 from app.database import Base, engine
 from app.errors import registrar_manejadores
-from app.routers import auth, projects, public
+from app.routers import auth, certificates, files, profile, projects, public, tech_stack
 
 
 @asynccontextmanager
@@ -26,7 +27,8 @@ Todas las respuestas exitosas usan `{ status, message, data }` y todos los error
 `{ status, code, message, details[] }`.
 
 **Bloque 1:** lecturas públicas — endpoints 9, 10, 12, 16 y 19.
-**Bloque 2 (este):** login y administración de proyectos — endpoints 1 a 8.
+**Bloque 2:** login y administración de proyectos — endpoints 1 a 8.
+**Bloque 3 (este):** certificados, lenguajes y herramientas, perfil y carga de archivos — endpoints 11, 13, 14, 15, 17, 18, 20 y 21.
 
 Para probar la administración desde esta página: ejecuta `POST /api/v1/auth/login`, copia el
 `access_token` y pégalo en el botón **Authorize**.
@@ -40,13 +42,23 @@ app = FastAPI(
     openapi_tags=[
         {"name": "Autenticación", "description": "Login del administrador (token JWT Bearer)."},
         {"name": "Proyectos (administración)", "description": "Requieren token. Ciclo de vida: BORRADOR → PUBLICADO → ARCHIVADO."},
+        {"name": "Certificados (administración)", "description": "Requieren token. Sin borrador: al crearse son públicos."},
+        {"name": "Lenguajes y herramientas (administración)", "description": "Requieren token. Catálogo único que usan los proyectos."},
+        {"name": "Perfil (administración)", "description": "Requiere token. Registro único: solo se edita."},
+        {"name": "Archivos", "description": "Requiere token. Sube PDF e imágenes y devuelve su URL."},
         {"name": "Lecturas públicas", "description": "Sin autenticación. Con ETag y Cache-Control (max-age 60 s)."},
     ],
 )
 registrar_manejadores(app)
 app.include_router(auth.router)
 app.include_router(projects.router)
+app.include_router(certificates.router)
+app.include_router(tech_stack.router)
+app.include_router(profile.router)
+app.include_router(files.router)
 app.include_router(public.router)
+# Los archivos subidos se sirven en /media (check_dir=False: la carpeta se crea al subir el primer archivo).
+app.mount("/media", StaticFiles(directory=config.FILES_DIR, check_dir=False), name="media")
 
 
 if __name__ == "__main__":

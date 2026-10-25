@@ -25,6 +25,16 @@ class NotificadorNulo:
         return ResultadoNotificacion(aceptada=False)
 
 
+def codigo_http(resultado: ResultadoNotificacion | None) -> int:
+    """200 normalmente; 202 si el pipeline tardó en responder."""
+    return 202 if resultado is not None and resultado.lenta else 200
+
+
+def fue_aceptada(resultado: ResultadoNotificacion | None) -> bool:
+    """Valor de recompilation_triggered: ¿el pipeline aceptó el aviso?"""
+    return resultado is not None and resultado.aceptada
+
+
 def get_notificador() -> Notificador:
     """Dependencia de FastAPI. En el Bloque 4 devolverá el notificador real; las pruebas lo reemplazan."""
     return NotificadorNulo()

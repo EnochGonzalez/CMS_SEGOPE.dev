@@ -8,12 +8,20 @@ from sqlalchemy.orm import sessionmaker
 
 from app import config, security
 from app.database import Base, crear_engine, get_db
+from app.ids import nuevo_id
 from app.main import app
 from app.pipeline import ResultadoNotificacion, get_notificador
 from app.seed import sembrar
+from app.storage import TIPOS, get_almacen
 
 CORREO_ADMIN = "admin@ejemplo.com"
 CLAVE_ADMIN = "clave-segura-123"
+
+# Archivos de ejemplo: lo que importa para la API son sus primeros bytes (así reconoce el tipo).
+PDF = b"%PDF-1.4\n% archivo de prueba\n" + b"0" * 64
+PNG = b"\x89PNG\r\n\x1a\n" + b"0" * 64
+JPEG = b"\xff\xd8\xff\xe0" + b"0" * 64
+WEBP = b"RIFF\x24\x00\x00\x00WEBPVP8 " + b"0" * 64
 
 
 @pytest.fixture()
@@ -56,8 +64,26 @@ def notificador():
     return NotificadorFalso()
 
 
+class AlmacenEnMemoria:
+    """Hace de servicio de archivos sin tocar el disco."""
+    base_url = "https://archivos.ejemplo.com/media"
+
+    def __init__(self):
+        self.archivos: dict[str, bytes] = {}
+
+    def guardar(self, contenido, mime_type, purpose):
+        url = f"{self.base_url}/{purpose.lower()}/{nuevo_id()}.{TIPOS[mime_type][0]}"
+        self.archivos[url] = contenido
+        return url
+
+
 @pytest.fixture()
-def client(session_factory, admin_configurado, notificador):
+def almacen():
+    return AlmacenEnMemoria()
+
+
+@pytest.fixture()
+def client(session_factory, admin_configurado, notificador, almacen):
     def _get_db():
         db = session_factory()
         try:
@@ -67,6 +93,7 @@ def client(session_factory, admin_configurado, notificador):
 
     app.dependency_overrides[get_db] = _get_db
     app.dependency_overrides[get_notificador] = lambda: notificador
+    app.dependency_overrides[get_almacen] = lambda: almacen
     yield TestClient(app)
     app.dependency_overrides.clear()
 

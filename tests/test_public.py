@@ -203,5 +203,7 @@ def test_documentacion_openapi_lista_todas_las_rutas(client):
     rutas = set(client.get("/openapi.json").json()["paths"])
     publicas = {f"{RUTA}{r}" for r in ["/projects", "/projects/{slug}", "/certificates", "/tech-stack", "/profile"]}
     admin = {"/api/v1/auth/login", "/api/v1/projects", "/api/v1/projects/{project_id}",
-             "/api/v1/projects/{project_id}/publish", "/api/v1/projects/{project_id}/archive"}
+             "/api/v1/projects/{project_id}/publish", "/api/v1/projects/{project_id}/archive",
+             "/api/v1/certificates", "/api/v1/certificates/{certificate_id}",
+             "/api/v1/tech-stack", "/api/v1/tech-stack/{stack_id}", "/api/v1/profile", "/api/v1/files"}
     assert rutas == publicas | admin

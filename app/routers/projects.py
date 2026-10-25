@@ -11,7 +11,7 @@ Endpoints de la especificación v2 que implementa este archivo:
 
 Ciclo de vida:  BORRADOR --publish--> PUBLICADO --archive--> ARCHIVADO (terminal)
 """
-from fastapi import APIRouter, Depends, Header, Query, Response
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -21,8 +21,8 @@ from app.dependencies import exigir_admin
 from app.errors import ApiError
 from app.models import Project, ahora_utc
 from app.pagination import Clave, paginar
-from app.pipeline import Notificador, get_notificador
-from app.routers.comunes import CURSOR, ERROR_401, ERROR_404, ERROR_409, ERROR_422, LIMITE
+from app.pipeline import Notificador, codigo_http, fue_aceptada, get_notificador
+from app.routers.comunes import CLAVE_IDEMPOTENCIA, CURSOR, ERROR_401, ERROR_404, ERROR_409, ERROR_422, LIMITE, RESPUESTA_202
 from app.schemas import (
     Envelope, Page, ProjectAdminDetailOut, ProjectAdminItemOut, ProjectArchivedOut, ProjectCreatedOut,
     ProjectCreateIn, ProjectPublishedOut, ProjectStatus, ProjectUpdatedOut, ProjectUpdateIn,
@@ -35,18 +35,6 @@ router = APIRouter(
     dependencies=[Depends(exigir_admin)],          # todo este router exige token
     responses=ERROR_401,
 )
-
-# Como en la sección 5 de la práctica guiada: FastAPI convierte idempotency_key en la cabecera Idempotency-Key.
-CLAVE_IDEMPOTENCIA = Header(min_length=8, max_length=128, description="Clave única por operación (por ejemplo un UUID). Se recuerda 24 h.")
-RESPUESTA_202 = {202: {"description": "La operación se aplicó, pero el pipeline tardó en responder: el aviso se reintenta en segundo plano"}}
-
-
-def _codigo(resultado) -> int:
-    return 202 if resultado is not None and resultado.lenta else 200
-
-
-def _compilacion_aceptada(resultado) -> bool:
-    return resultado is not None and resultado.aceptada
 
 
 # ------------------------------------------------------------------ 2. crear borrador
@@ -152,11 +140,11 @@ def actualizar_proyecto(
 
     # El aviso va DESPUÉS de confirmar: así el pipeline, al leer la API, ya ve los cambios.
     resultado = notificador.notificar("PROJECT_UPDATED", proyecto.project_id) if proyecto.status == "PUBLICADO" else None
-    response.status_code = _codigo(resultado)
+    response.status_code = codigo_http(resultado)
     return Envelope[ProjectUpdatedOut](
         message="Proyecto actualizado exitosamente",
         data=ProjectUpdatedOut(project_id=proyecto.project_id, status=proyecto.status, updated_at=proyecto.updated_at,
-                               recompilation_triggered=_compilacion_aceptada(resultado)),
+                               recompilation_triggered=fue_aceptada(resultado)),
     )
 
 
@@ -192,11 +180,11 @@ def publicar_proyecto(
     db.commit()
 
     resultado = notificador.notificar("PROJECT_PUBLISHED", proyecto.project_id)
-    codigo = _codigo(resultado)
+    codigo = codigo_http(resultado)
     envelope = Envelope[ProjectPublishedOut](
         message="El proyecto se ha publicado exitosamente",
         data=ProjectPublishedOut(project_id=proyecto.project_id, status=proyecto.status, published_at=proyecto.published_at,
-                                 recompilation_triggered=_compilacion_aceptada(resultado)),
+                                 recompilation_triggered=fue_aceptada(resultado)),
     )
     # Nota: si el servidor se cayera justo entre el commit y esta línea, el reintento recibiría 409.
     idem.guardar_y_confirmar(db, idempotency_key, h, codigo, envelope)
@@ -230,11 +218,11 @@ def archivar_proyecto(
     db.commit()
 
     resultado = notificador.notificar("PROJECT_ARCHIVED", proyecto.project_id)
-    codigo = _codigo(resultado)
+    codigo = codigo_http(resultado)
     envelope = Envelope[ProjectArchivedOut](
         message="El proyecto se ha archivado",
         data=ProjectArchivedOut(project_id=proyecto.project_id, status=proyecto.status, updated_at=proyecto.updated_at,
-                                recompilation_triggered=_compilacion_aceptada(resultado)),
+                                recompilation_triggered=fue_aceptada(resultado)),
     )
     idem.guardar_y_confirmar(db, idempotency_key, h, codigo, envelope)
     response.status_code = codigo

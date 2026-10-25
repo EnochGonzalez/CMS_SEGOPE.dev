@@ -4,5 +4,6 @@ __pycache__/
 *.pyc
 *.db
 .env
+uploads/
 README.md
 CMS_SEGOPE.txt
