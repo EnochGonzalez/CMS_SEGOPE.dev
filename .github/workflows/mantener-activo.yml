@@ -1,0 +1,27 @@
+# Visita /health de tu API cada 3 días. Así Supabase (que pausa los proyectos gratuitos tras una semana sin actividad)
+# no pausa tu base de datos, y de paso la API se despierta si estaba dormida.
+# Antes de usarlo: en GitHub → tu repositorio → Settings → Secrets and variables → Actions → pestaña "Variables" →
+# "New repository variable": nombre API_URL, valor la dirección de tu API en Render (https://tu-api.onrender.com, sin "/" al final).
+name: Mantener activa la API
+
+on:
+  schedule:
+    - cron: "17 14 */3 * *"        # cada 3 días, a las 14:17 UTC
+  workflow_dispatch:                 # también se puede lanzar a mano desde la pestaña Actions
+
+jobs:
+  visitar-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Visitar /health
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "Falta la variable API_URL (Settings → Secrets and variables → Actions → Variables)."
+            exit 1
+          fi
+          # Una API gratuita dormida tarda cerca de un minuto en despertar: se reintenta con calma.
+          curl --fail --silent --show-error --retry 5 --retry-delay 20 --retry-all-errors --max-time 90 "$API_URL/health"
+          echo

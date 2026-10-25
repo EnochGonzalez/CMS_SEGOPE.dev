@@ -3,7 +3,7 @@
 Endpoint de la especificación v2 que implementa este archivo:
    1. POST /api/v1/auth/login     Inicio de sesión del administrador
 """
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 
 from app import config, security
 from app.errors import ApiError
@@ -23,14 +23,16 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Autenticación"])
         503: {"model": ErrorEnvelope, "description": "El administrador aún no está configurado"},
     },
 )
-def iniciar_sesion(datos: LoginIn, request: Request):
+def iniciar_sesion(datos: LoginIn):
     """Devuelve un `access_token` (JWT) para usar como `Authorization: Bearer <access_token>`.
 
-    Tras 5 intentos fallidos con el mismo correo desde la misma IP, se bloquea por 15 minutos (429)."""
+    Tras 5 intentos fallidos con el mismo correo, se bloquea por 15 minutos (429)."""
     security.exigir_configuracion()
 
-    ip = request.client.host if request.client else "desconocida"
-    clave = f"{ip}|{datos.email.lower()}"
+    # El límite se cuenta SOLO por correo, no por IP: en internet la IP viene de cabeceras (X-Forwarded-For) que cualquiera
+    # puede falsificar, y con una IP distinta en cada intento se saltaría el límite. El costo: quien adivine mal 5 veces
+    # el correo del administrador lo bloquea 15 minutos; es preferible a que adivinar contraseñas no tenga freno.
+    clave = datos.email.lower()
     espera = security.limitador_login.segundos_de_espera(clave)
     if espera > 0:
         raise ApiError(429, "TOO_MANY_ATTEMPTS", f"Demasiados intentos fallidos; intenta de nuevo en {espera} segundos",

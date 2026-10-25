@@ -114,3 +114,21 @@ def test_token_de_otro_correo_no_sirve(client):
 
 def test_las_lecturas_publicas_siguen_sin_token(client):
     assert client.get("/api/v1/public/projects").status_code == 200
+
+
+def test_el_limite_de_intentos_no_se_salta_cambiando_de_direccion_ip(client):
+    """En internet la IP puede falsificarse (X-Forwarded-For): el límite se cuenta por correo, sea cual sea la IP."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+    for i in range(5):
+        desde = TestClient(app, client=(f"203.0.113.{i + 1}", 40000 + i))                 # cada intento, "desde otra IP"
+        assert desde.post(LOGIN, json={"email": CORREO_ADMIN, "password": "clave-incorrecta-1"}).status_code == 401
+    otra_mas = TestClient(app, client=("198.51.100.77", 55555))
+    r = otra_mas.post(LOGIN, json={"email": CORREO_ADMIN, "password": CLAVE_ADMIN})
+    assert r.status_code == 429 and r.json()["code"] == "TOO_MANY_ATTEMPTS"
+
+
+def test_el_bloqueo_de_un_correo_no_afecta_a_otro_correo(client):
+    for _ in range(5):
+        client.post(LOGIN, json={"email": "otro@ejemplo.com", "password": "clave-incorrecta-1"})
+    assert client.post(LOGIN, json={"email": CORREO_ADMIN, "password": CLAVE_ADMIN}).status_code == 200
