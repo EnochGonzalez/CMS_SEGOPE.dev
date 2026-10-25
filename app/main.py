@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app import config, models  # noqa: F401  (models registra las tablas en Base.metadata)
+from app import config, consola, models  # noqa: F401  (models registra las tablas en Base.metadata)
 from app.database import Base, engine
 from app.errors import registrar_manejadores
 from app.routers import auth, certificates, files, profile, projects, public, tech_stack
@@ -28,7 +28,8 @@ Todas las respuestas exitosas usan `{ status, message, data }` y todos los error
 
 **Bloque 1:** lecturas públicas — endpoints 9, 10, 12, 16 y 19.
 **Bloque 2:** login y administración de proyectos — endpoints 1 a 8.
-**Bloque 3 (este):** certificados, lenguajes y herramientas, perfil y carga de archivos — endpoints 11, 13, 14, 15, 17, 18, 20 y 21.
+**Bloque 3:** certificados, lenguajes y herramientas, perfil y carga de archivos — endpoints 11, 13, 14, 15, 17, 18, 20 y 21.
+**Bloque 5 (este):** consola de administración en [/admin/](/admin/).
 
 Para probar la administración desde esta página: ejecuta `POST /api/v1/auth/login`, copia el
 `access_token` y pégalo en el botón **Authorize**.
@@ -59,6 +60,8 @@ app.include_router(files.router)
 app.include_router(public.router)
 # Los archivos subidos se sirven en /media (check_dir=False: la carpeta se crea al subir el primer archivo).
 app.mount("/media", StaticFiles(directory=config.FILES_DIR, check_dir=False), name="media")
+# La consola de administración (admin/) se sirve en /admin/.
+consola.montar_consola(app)
 
 
 if __name__ == "__main__":
