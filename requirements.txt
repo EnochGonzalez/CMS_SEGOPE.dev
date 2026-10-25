@@ -1,0 +1,12 @@
+# Mismas librerías que la práctica guiada de FastAPI (fastapi, uvicorn, httpie, requests, httpx),
+# más SQLAlchemy (base de datos) y pytest (pruebas automáticas).
+fastapi
+uvicorn
+sqlalchemy>=2.0
+httpie
+requests
+httpx
+pytest
+# TestClient de FastAPI/Starlette pide httpx2 en versiones recientes (mismo autor que httpx);
+# sin él las pruebas funcionan, pero pytest muestra un aviso de deprecación.
+httpx2
