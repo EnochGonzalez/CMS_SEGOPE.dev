@@ -1,6 +1,6 @@
 // Lenguajes y herramientas: listado público (16) y administración: crear (15), actualizar (17) y eliminar (18).
 import { api } from '../api.js';
-import { pendiente } from '../estado.js';
+import { cambioEnElBlog } from '../estado.js';
 import {
   avisar, campo, cargando, CATEGORIAS, confirmar, dialogo, el, entrada, errorDeCarga, interruptor, limpiarErrores,
   mensajeDeError, mostrarErrores, ORDEN_CATEGORIAS, selector, selectorArchivo,
@@ -60,9 +60,10 @@ export async function montar(contenedor) {
 
       guardar.disabled = true;
       try {
-        if (esNuevo) await api.crear('/api/v1/tech-stack', datos);
-        else await api.reemplazar(`/api/v1/tech-stack/${elemento.stack_id}`, datos);
-        if (!esNuevo || datos.show_in_profile) pendiente.marcar();
+        const r = esNuevo
+          ? await api.crear('/api/v1/tech-stack', datos)
+          : await api.reemplazar(`/api/v1/tech-stack/${elemento.stack_id}`, datos);
+        if (!esNuevo || datos.show_in_profile) cambioEnElBlog(r.datos);
         avisar(esNuevo ? 'Elemento creado.' : 'Elemento actualizado.');
         ventana.cerrar();
         await cargar();
@@ -78,8 +79,8 @@ export async function montar(contenedor) {
   async function cambiarVisibilidad(elemento, casilla) {
     casilla.disabled = true;
     try {
-      await api.reemplazar(`/api/v1/tech-stack/${elemento.stack_id}`, cuerpoPut(elemento, { show_in_profile: casilla.checked }));
-      pendiente.marcar();
+      const r = await api.reemplazar(`/api/v1/tech-stack/${elemento.stack_id}`, cuerpoPut(elemento, { show_in_profile: casilla.checked }));
+      cambioEnElBlog(r.datos);
       avisar(casilla.checked ? `${elemento.name} se mostrará en el blog.` : `${elemento.name} se ocultará del blog.`);
     } catch (error) {
       avisar(mensajeDeError(error), 'error');
@@ -91,8 +92,8 @@ export async function montar(contenedor) {
     const seguro = await confirmar({ titulo: `¿Eliminar "${elemento.name}"?`, texto: 'Se borra del catálogo. Si algún proyecto lo usa, no se podrá eliminar.', aceptar: 'Eliminar', peligro: true });
     if (!seguro) return;
     try {
-      await api.eliminar(`/api/v1/tech-stack/${elemento.stack_id}`);
-      if (elemento.show_in_profile) pendiente.marcar();
+      const r = await api.eliminar(`/api/v1/tech-stack/${elemento.stack_id}`);
+      if (elemento.show_in_profile) cambioEnElBlog(r.datos);
       avisar('Elemento eliminado.');
     } catch (error) {
       if (error.code === 'STACK_IN_USE') {

@@ -1,5 +1,6 @@
 """Prepara, para cada prueba, una base SQLite temporal ya sembrada con el contenido del blog,
 un administrador de prueba y un notificador falso del pipeline."""
+import os
 import uuid
 
 import pytest
@@ -26,7 +27,12 @@ WEBP = b"RIFF\x24\x00\x00\x00WEBPVP8 " + b"0" * 64
 
 @pytest.fixture()
 def session_factory(tmp_path):
-    engine = crear_engine(f"sqlite:///{tmp_path / 'prueba.db'}")
+    # Por defecto cada prueba usa su propia base SQLite. Con TEST_DATABASE_URL (una base Postgres vacía de prueba)
+    # toda la suite corre contra Postgres: así se comprueba que la API funciona igual en la base de producción.
+    url_prueba = os.getenv("TEST_DATABASE_URL")
+    engine = crear_engine(url_prueba or f"sqlite:///{tmp_path / 'prueba.db'}")
+    if url_prueba:
+        Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     fabrica = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
     with fabrica() as db:

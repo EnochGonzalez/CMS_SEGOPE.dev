@@ -6,6 +6,7 @@ Endpoint de la especificación v2 que implementa este archivo:
 Primero se sube el archivo aquí; la respuesta trae la `url` que luego se usa en un certificado, un logo o la foto del perfil.
 """
 import hashlib
+import logging
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.orm import Session
@@ -18,6 +19,8 @@ from app.errors import ApiError
 from app.routers.comunes import CLAVE_IDEMPOTENCIA, ERROR_401, ERROR_422
 from app.schemas import Envelope, ErrorEnvelope, FilePurpose, FileUploadedOut
 from app.storage import TIPOS, Almacen, detectar_tipo, get_almacen
+
+log = logging.getLogger("cms.archivos")
 
 router = APIRouter(
     prefix="/api/v1/files",
@@ -34,6 +37,7 @@ router = APIRouter(
         **ERROR_422,
         413: {"model": ErrorEnvelope, "description": "El archivo excede el límite (PDF 5 MB, imágenes 2 MB)"},
         415: {"model": ErrorEnvelope, "description": "Solo se aceptan PDF, JPEG, PNG y WebP"},
+        502: {"model": ErrorEnvelope, "description": "El almacenamiento de archivos no respondió"},
     },
 )
 def cargar_archivo(
@@ -65,7 +69,11 @@ def cargar_archivo(
         raise ApiError(422, "FILE_PURPOSE_MISMATCH", f"El propósito {purpose.value} exige {esperado}",
                        [{"field": "purpose", "issue": f"El archivo enviado es {tipo}"}])
 
-    url = almacen.guardar(contenido, tipo, purpose.value)
+    try:
+        url = almacen.guardar(contenido, tipo, purpose.value)
+    except Exception as error:                        # el almacén externo no respondió, credenciales vencidas, bucket inexistente...
+        log.error("No se pudo guardar el archivo en el almacén (%s)", type(error).__name__)
+        raise ApiError(502, "STORAGE_UNAVAILABLE", "No se pudo guardar el archivo en el almacenamiento. Intenta de nuevo en un momento.")
     envelope = Envelope[FileUploadedOut](message="Archivo cargado exitosamente",
                                          data=FileUploadedOut(url=url, mime_type=tipo, size_bytes=len(contenido)))
     idem.guardar_y_confirmar(db, idempotency_key, h, 201, envelope)

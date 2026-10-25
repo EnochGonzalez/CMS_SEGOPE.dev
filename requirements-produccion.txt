@@ -1,0 +1,10 @@
+# Librerías del SERVIDOR (Render). Son las versiones exactas con las que se probó todo, incluida una base Postgres real.
+# En tu computadora sigues usando requirements.txt; este archivo solo agrega lo que necesita el servidor (Postgres y S3).
+fastapi==0.162.0
+uvicorn==0.54.0
+sqlalchemy==2.1.6
+pyjwt==2.7.0
+python-multipart==0.0.32
+httpx==0.28.1
+psycopg[binary]==3.3.6
+boto3==1.43.118

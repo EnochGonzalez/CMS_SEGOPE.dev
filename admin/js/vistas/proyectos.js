@@ -1,6 +1,6 @@
 // Listado de proyectos (endpoint 3) y sus acciones: publicar (6), archivar (7) y eliminar (8).
 import { api } from '../api.js';
-import { pendiente } from '../estado.js';
+import { cambioEnElBlog } from '../estado.js';
 import { avisar, cargando, confirmar, dialogo, el, errorDeCarga, ESTADOS, formatearFecha, formatearFechaHora, insignia, mensajeDeError, traducirIssue } from '../ui.js';
 
 const FILTROS = ['TODOS', 'BORRADOR', 'PUBLICADO', 'ARCHIVADO'];
@@ -51,9 +51,9 @@ export async function montar(contenedor) {
     if (!seguro) return;
     boton.disabled = true;
     try {
-      await api.accion(`/api/v1/projects/${proyecto.project_id}/publish`);
+      const r = await api.accion(`/api/v1/projects/${proyecto.project_id}/publish`);
       avisar(`Publicado: ${proyecto.title}`);
-      pendiente.marcar();
+      cambioEnElBlog(r.datos);
     } catch (error) {
       if (error.code === 'PUBLISH_CONTRACT_INCOMPLETE') explicarContrato(error, proyecto);
       else avisar(mensajeDeError(error), 'error');
@@ -70,9 +70,9 @@ export async function montar(contenedor) {
     if (!seguro) return;
     boton.disabled = true;
     try {
-      await api.accion(`/api/v1/projects/${proyecto.project_id}/archive`);
+      const r = await api.accion(`/api/v1/projects/${proyecto.project_id}/archive`);
       avisar(`Archivado: ${proyecto.title}`);
-      pendiente.marcar();
+      cambioEnElBlog(r.datos);
     } catch (error) {
       avisar(mensajeDeError(error), 'error');
     }

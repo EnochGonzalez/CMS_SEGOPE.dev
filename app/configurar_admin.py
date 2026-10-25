@@ -1,10 +1,12 @@
 """Configura el administrador del CMS: escribe el archivo .env con el correo, el resumen (hash)
 de la contraseña y una clave secreta para firmar los tokens.
 
-Uso:  python -m app.configurar_admin
+Uso:  python -m app.configurar_admin            (escribe .env, para tu computadora)
+      python -m app.configurar_admin --imprimir (solo muestra las 3 variables, para pegarlas en el panel del servidor)
 
 La contraseña NO se guarda: solo su hash. El archivo .env está en .gitignore; no lo subas a Git.
 """
+import argparse
 import getpass
 import re
 import secrets
@@ -33,10 +35,14 @@ def escribir_env(ruta: Path, nuevos: dict[str, str]) -> None:
     ruta.write_text("\n".join(lineas) + "\n", encoding="utf-8")
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Configura el administrador del CMS.")
+    parser.add_argument("--imprimir", action="store_true", help="muestra las variables en pantalla en lugar de escribir .env")
+    argumentos = parser.parse_args(argv)
+
     print("Configuración del administrador del CMS\n")
     ya_hay = bool(config.leer_env(config.ARCHIVO_ENV).get("ADMIN_EMAIL"))
-    if ya_hay and input("Ya hay un administrador configurado. ¿Reemplazarlo? (s/N): ").strip().lower() != "s":
+    if not argumentos.imprimir and ya_hay and input("Ya hay un administrador configurado. ¿Reemplazarlo? (s/N): ").strip().lower() != "s":
         print("Sin cambios.")
         return
 
@@ -53,7 +59,13 @@ def main() -> None:
         else:
             break
 
-    escribir_env(config.ARCHIVO_ENV, construir_valores(email, password))
+    valores = construir_valores(email, password)
+    if argumentos.imprimir:
+        print("\nPega cada línea como una variable de entorno en el panel de tu servidor (Render). No las guardes en Git ni las compartas:\n")
+        for clave, valor in valores.items():
+            print(f"{clave}={valor}")
+        return
+    escribir_env(config.ARCHIVO_ENV, valores)
     print(f"\nListo: se escribió {config.ARCHIVO_ENV.name}. Reinicia la API para que lo lea.")
 
 

@@ -1,6 +1,6 @@
 // Editor de un proyecto: crear (2), leer (4), actualizar (5), publicar (6), archivar (7) y eliminar (8).
 import { api } from '../api.js';
-import { pendiente } from '../estado.js';
+import { cambioEnElBlog } from '../estado.js';
 import {
   area, avisar, campo, cargando, CATEGORIAS, confirmar, el, entrada, errorDeCarga, formatearFechaHora, insignia,
   interruptor, limpiarErrores, mensajeDeError, mostrarErrores, ORDEN_CATEGORIAS, slugificar,
@@ -203,8 +203,8 @@ function construir(contenedor, catalogo, proyecto, vista) {
         const r = await api.crear('/api/v1/projects', datos);
         idProyecto = r.datos.project_id;
       } else {
-        await api.reemplazar(`/api/v1/projects/${idProyecto}`, datos);
-        if (estado === 'PUBLICADO') pendiente.marcar();
+        const r = await api.reemplazar(`/api/v1/projects/${idProyecto}`, datos);
+        if (estado === 'PUBLICADO') cambioEnElBlog(r.datos);
       }
     } catch (error) {
       mostrarErrores(formulario, error);
@@ -215,9 +215,9 @@ function construir(contenedor, catalogo, proyecto, vista) {
     let publicado = false;
     if (publicar) {
       try {
-        await api.accion(`/api/v1/projects/${idProyecto}/publish`);
+        const r = await api.accion(`/api/v1/projects/${idProyecto}/publish`);
         publicado = true;
-        pendiente.marcar();
+        cambioEnElBlog(r.datos);
       } catch (error) {
         avisar(`Se guardó el borrador, pero no se pudo publicar: ${mensajeDeError(error)}`, 'error');
       }
@@ -237,8 +237,8 @@ function construir(contenedor, catalogo, proyecto, vista) {
     if (!seguro) return;
     ocupado(true);
     try {
-      await api.accion(`/api/v1/projects/${p.project_id}/archive`);
-      pendiente.marcar();
+      const r = await api.accion(`/api/v1/projects/${p.project_id}/archive`);
+      cambioEnElBlog(r.datos);
       avisar('Proyecto archivado.');
       base = JSON.stringify(leer());
       location.hash = '#/proyectos';

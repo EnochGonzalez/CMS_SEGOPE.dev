@@ -132,6 +132,11 @@ def sembrar(db: Session) -> dict:
             "elementos de catálogo": len(CATALOGO), "perfil": 1}
 
 
+def base_vacia(db: Session) -> bool:
+    """True si no hay ni proyectos, ni certificados, ni catálogo, ni perfil (un servidor recién creado)."""
+    return not any(db.scalar(select(func.count()).select_from(modelo)) for modelo in (models.Project, models.Certificate, models.TechStackItem, models.Profile))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Carga el contenido actual del blog en la base de datos.")
     parser.add_argument("--reset", action="store_true", help="borra todo antes de sembrar")

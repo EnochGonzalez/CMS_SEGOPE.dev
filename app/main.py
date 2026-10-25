@@ -2,20 +2,45 @@
 
 Arranque:  python -m uvicorn app.main:app --reload      (documentación en /docs)
 """
+import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-from app import config, consola, models  # noqa: F401  (models registra las tablas en Base.metadata)
-from app.database import Base, engine
+from app import config, consola, models, seed  # noqa: F401  (models registra las tablas en Base.metadata)
+from app.database import Base, SessionLocal, activar_seguridad_por_filas, engine, get_db
 from app.errors import registrar_manejadores
 from app.routers import auth, certificates, files, profile, projects, public, tech_stack
 
 
+# Los mensajes de la API (avisos al pipeline, errores del almacén) salen en el registro del servidor con el prefijo "cms".
+_registro = logging.getLogger("cms")
+if not _registro.handlers:
+    _manejador = logging.StreamHandler()
+    _manejador.setFormatter(logging.Formatter("%(levelname)s:     [%(name)s] %(message)s"))
+    _registro.addHandler(_manejador)
+    _registro.setLevel(logging.INFO)
+log = logging.getLogger("cms.arranque")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    problemas = config.problemas_de_configuracion()
+    if problemas:                          # mejor no arrancar que guardar archivos con direcciones equivocadas
+        raise RuntimeError("Configuración incompleta:\n- " + "\n- ".join(problemas))
     Base.metadata.create_all(engine)      # crea las tablas si todavía no existen
+    activar_seguridad_por_filas(engine)   # solo en Postgres
+    if config.SEMBRAR_SI_ESTA_VACIA:
+        with SessionLocal() as db:
+            if seed.base_vacia(db):
+                resumen = seed.sembrar(db)
+                log.info("Base vacía: se cargó el contenido inicial (%s)", ", ".join(f"{n} {k}" for k, n in resumen.items()))
+    if not (config.ADMIN_EMAIL and config.ADMIN_PASSWORD_HASH and config.JWT_SECRET):
+        log.warning("El administrador no está configurado: las lecturas públicas funcionan, pero nadie puede iniciar sesión")
     yield
 
 
@@ -51,6 +76,27 @@ app = FastAPI(
     ],
 )
 registrar_manejadores(app)
+@app.middleware("http")
+async def cabeceras_de_seguridad(request: Request, call_next):
+    """El navegador no debe adivinar el tipo de un archivo subido, y las respuestas de una sesión de administrador
+    (con Authorization) nunca se guardan en cachés compartidas."""
+    respuesta = await call_next(request)
+    respuesta.headers.setdefault("X-Content-Type-Options", "nosniff")
+    if request.headers.get("authorization") and "cache-control" not in respuesta.headers:
+        respuesta.headers["Cache-Control"] = "no-store"
+    return respuesta
+
+
+@app.get("/health", include_in_schema=False)
+def salud(db: Session = Depends(get_db)):
+    """Para el servidor y los monitores: responde 200 si la API y su base de datos están vivas."""
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception:
+        return JSONResponse(status_code=503, content={"status": "error", "database": "no responde"})
+    return {"status": "ok", "database": "ok"}
+
+
 app.include_router(auth.router)
 app.include_router(projects.router)
 app.include_router(certificates.router)

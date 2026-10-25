@@ -1,6 +1,6 @@
 // Perfil y contacto: lectura pública (19) y actualización (20). Es un registro único: solo se edita.
 import { api } from '../api.js';
-import { pendiente } from '../estado.js';
+import { cambioEnElBlog } from '../estado.js';
 import {
   area, avisar, campo, cargando, el, entrada, errorDeCarga, formatearFechaHora, limpiarErrores, mostrarErrores, selectorArchivo,
 } from '../ui.js';
@@ -69,8 +69,8 @@ export async function montar(contenedor, parametros, vista = {}) {
 
     guardar.disabled = true;
     try {
-      await api.reemplazar('/api/v1/profile', d);
-      pendiente.marcar();
+      const r = await api.reemplazar('/api/v1/profile', d);
+      cambioEnElBlog(r.datos);
       base = JSON.stringify(d);
       avisar('Perfil guardado.');
       await montar(contenedor, parametros, vista);

@@ -1,7 +1,7 @@
 // Certificados: listado público (12) y administración: crear (11), actualizar (13) y eliminar (14).
 // El PDF y la imagen se suben con POST /api/v1/files (21) y la URL que devuelve se usa en el certificado.
 import { api } from '../api.js';
-import { pendiente } from '../estado.js';
+import { cambioEnElBlog } from '../estado.js';
 import {
   avisar, campo, cargando, confirmar, dialogo, el, entrada, errorDeCarga, formatearFecha, hoy,
   limpiarErrores, mensajeDeError, mostrarErrores, selectorArchivo,
@@ -55,9 +55,10 @@ export async function montar(contenedor) {
 
       guardar.disabled = true;
       try {
-        if (esNuevo) await api.crear('/api/v1/certificates', datos);
-        else await api.reemplazar(`/api/v1/certificates/${certificado.certificate_id}`, datos);
-        pendiente.marcar();
+        const r = esNuevo
+          ? await api.crear('/api/v1/certificates', datos)
+          : await api.reemplazar(`/api/v1/certificates/${certificado.certificate_id}`, datos);
+        cambioEnElBlog(r.datos);
         avisar(esNuevo ? 'Certificado creado.' : 'Certificado actualizado.');
         ventana.cerrar();
         await cargar();
@@ -78,8 +79,8 @@ export async function montar(contenedor) {
     });
     if (!seguro) return;
     try {
-      await api.eliminar(`/api/v1/certificates/${certificado.certificate_id}`);
-      pendiente.marcar();
+      const r = await api.eliminar(`/api/v1/certificates/${certificado.certificate_id}`);
+      cambioEnElBlog(r.datos);
       avisar('Certificado eliminado.');
     } catch (error) {
       avisar(mensajeDeError(error), 'error');
