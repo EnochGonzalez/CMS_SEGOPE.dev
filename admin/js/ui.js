@@ -173,6 +173,8 @@ const MENSAJES = {
   FILE_URL_NOT_ALLOWED: 'Alguna URL de archivo no viene del servicio de archivos.',
   STACK_NAME_ALREADY_EXISTS: 'Ya existe un elemento con ese nombre.',
   STACK_IN_USE: 'No se puede eliminar: hay proyectos que lo usan.',
+  SITE_DOMAIN_ALREADY_EXISTS: 'Ya existe un sitio con ese dominio.',
+  SITE_NOT_FOUND: 'Ese sitio ya no existe.',
   PROJECT_ARCHIVED: 'Un proyecto archivado ya no se puede modificar.',
   PROJECT_ALREADY_PUBLISHED: 'El proyecto ya estaba publicado.',
   PROJECT_NOT_PUBLISHED: 'Solo se puede archivar un proyecto publicado.',

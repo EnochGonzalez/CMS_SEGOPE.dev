@@ -206,4 +206,6 @@ def test_documentacion_openapi_lista_todas_las_rutas(client):
              "/api/v1/projects/{project_id}/publish", "/api/v1/projects/{project_id}/archive",
              "/api/v1/certificates", "/api/v1/certificates/{certificate_id}",
              "/api/v1/tech-stack", "/api/v1/tech-stack/{stack_id}", "/api/v1/profile", "/api/v1/files"}
-    assert rutas == publicas | admin
+    # Mejora posterior a la especificación: monitoreo de visitas (sitios, estadísticas y registro público).
+    monitoreo = {"/api/v1/sites", "/api/v1/sites/{site_id}", "/api/v1/stats", "/api/v1/track"}
+    assert rutas == publicas | admin | monitoreo

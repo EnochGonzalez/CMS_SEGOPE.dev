@@ -5,6 +5,7 @@ Convención del proyecto, igual que en la práctica guiada de FastAPI:
   - XxxOut = lo que la API devuelve. response_model descarta todo campo que no esté
              aquí (por ejemplo status o created_at en las lecturas públicas).
 """
+import re
 from datetime import date, datetime, timezone
 from enum import Enum
 from typing import Annotated, Generic, Literal, TypeVar
@@ -377,3 +378,124 @@ class FileUploadedOut(BaseModel):
     url: str
     mime_type: str
     size_bytes: int
+
+
+# ================================================================= MONITOREO: sitios y estadísticas
+def _limpiar_dominio(valor):
+    """Acepta también lo que se copia de la barra del navegador (https://sitio.com/pagina) y lo deja en 'sitio.com'."""
+    if not isinstance(valor, str):
+        return valor
+    valor = valor.strip().lower()
+    valor = re.sub(r"^[a-z][a-z0-9+.-]*://", "", valor)
+    valor = re.split(r"[/?#]", valor, maxsplit=1)[0]
+    return re.sub(r":\d+$", "", valor)
+
+
+Dominio = Annotated[str, StringConstraints(min_length=3, max_length=120,
+                                           pattern=r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$")]
+ColorHex = Annotated[str, StringConstraints(pattern=r"^#[0-9a-fA-F]{6}$")]
+
+
+class SiteIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]
+    domain: Dominio
+    color: ColorHex = "#ef4444"
+    is_active: bool = True
+
+    @field_validator("domain", mode="before")
+    @classmethod
+    def _dominio_limpio(cls, valor):
+        return _limpiar_dominio(valor)
+
+
+class SiteUpdateIn(SiteIn):
+    """PUT reemplaza el sitio completo: color e is_active son obligatorios."""
+    color: ColorHex
+    is_active: bool
+
+
+class SiteOut(_Out):
+    site_id: str
+    name: str
+    domain: str
+    color: str
+    is_active: bool
+    created_at: FechaHoraUTC
+    updated_at: FechaHoraUTC
+
+
+class SiteListItemOut(SiteOut):
+    views_total: int
+    last_view_at: FechaHoraUTC | None
+
+
+class SiteDeletedOut(BaseModel):
+    deleted: Literal[True] = True
+    site_id: str
+    views_deleted: int
+
+
+class Periodo(str, Enum):
+    DIA = "1d"
+    SEMANA = "1w"
+    DOS_SEMANAS = "2w"
+    MES = "1m"
+    TRIMESTRE = "3m"
+    ANIO = "1y"
+
+
+class StatsTotalsOut(BaseModel):
+    views: int
+    visitors: int
+    pages: int                                  # páginas distintas que recibieron visitas
+    views_prev: int
+    visitors_prev: int
+    views_delta_pct: float | None               # None si el periodo anterior no tuvo visitas
+    visitors_delta_pct: float | None
+
+
+class StatsSiteOut(BaseModel):
+    site_id: str
+    name: str
+    domain: str
+    color: str
+    is_active: bool
+    views: int
+    visitors: int
+    share_pct: float
+    delta_pct: float | None
+
+
+class StatsPointOut(BaseModel):
+    label: str                                  # "2026-11-24" (por día) o "14:00" (por hora)
+    views: int
+    visitors: int
+
+
+class StatsPageOut(BaseModel):
+    site_id: str
+    site_name: str
+    color: str
+    path: str
+    views: int
+    visitors: int
+
+
+class StatsReferrerOut(BaseModel):
+    source: str | None                          # None = directo / sin referencia
+    views: int
+
+
+class StatsOut(BaseModel):
+    period: Periodo
+    granularity: Literal["hour", "day"]
+    from_date: date
+    to_date: date
+    utc_offset_hours: int
+    totals: StatsTotalsOut
+    sites: list[StatsSiteOut]
+    series: list[StatsPointOut]
+    top_pages: list[StatsPageOut]
+    referrers: list[StatsReferrerOut]

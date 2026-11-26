@@ -78,6 +78,14 @@ PIPELINE_VENTANA_SEGUNDOS = float(os.getenv("PIPELINE_VENTANA_SEGUNDOS", "60"))
 # Primera vez en un servidor nuevo: si la base está vacía, cargar el contenido inicial del blog (python -m app.seed).
 SEMBRAR_SI_ESTA_VACIA = os.getenv("SEMBRAR_SI_ESTA_VACIA", "").strip().lower() in ("1", "true", "si", "sí", "yes")
 
+# ---------------------------------------------------------------- monitoreo de visitas (estadísticas)
+# Los días y las horas de las estadísticas se agrupan en hora local con un desfase FIJO respecto a UTC
+# (México centro: -6, sin horario de verano). Así no hace falta la base de zonas horarias del sistema.
+ANALITICA_UTC_OFFSET_HORAS = int(os.getenv("ANALITICA_UTC_OFFSET_HORAS", "-6"))
+ANALITICA_DIAS_RETENCION = int(os.getenv("ANALITICA_DIAS_RETENCION", "400"))        # las visitas más viejas se borran al arrancar
+ANALITICA_MAX_VISTAS = int(os.getenv("ANALITICA_MAX_VISTAS", "60"))                  # tope por visitante en cada ventana
+ANALITICA_VENTANA_SEGUNDOS = int(os.getenv("ANALITICA_VENTANA_SEGUNDOS", "600"))     # 10 minutos
+
 
 def s3_configurado() -> bool:
     return all([S3_ENDPOINT_URL, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY])

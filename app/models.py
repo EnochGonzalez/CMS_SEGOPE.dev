@@ -143,3 +143,32 @@ class IdempotencyKey(Base):
     status_code: Mapped[int] = mapped_column(Integer)
     body: Mapped[str] = mapped_column(Text)                   # la respuesta original, en JSON
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora_utc)
+
+
+# ----------------------------------------------------------------- monitoreo de visitas
+class Site(Base):
+    """Un sitio web que el CMS monitorea (por ejemplo el blog). Se identifica por su dominio."""
+    __tablename__ = "sites"
+
+    site_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=nuevo_id)
+    name: Mapped[str] = mapped_column(String(60))
+    domain: Mapped[str] = mapped_column(String(120), unique=True)
+    color: Mapped[str] = mapped_column(String(7), default="#ef4444")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)           # False = pausado: ya no registra visitas
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora_utc)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora_utc, onupdate=ahora_utc)
+
+
+class PageView(Base):
+    """Una visita a una página. No guarda IP ni cookies: `visitor` es un hash que cambia cada día."""
+    __tablename__ = "page_views"
+    __table_args__ = (Index("ix_page_views_site_day", "site_id", "day"),)
+
+    view_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    site_id: Mapped[str] = mapped_column(ForeignKey("sites.site_id", ondelete="CASCADE"))
+    path: Mapped[str] = mapped_column(String(200))
+    visitor: Mapped[str] = mapped_column(String(16))
+    referrer_host: Mapped[str | None] = mapped_column(String(120))
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora_utc)
+    day: Mapped[date] = mapped_column(Date)            # día y hora LOCALES (ver ANALITICA_UTC_OFFSET_HORAS), para agrupar rápido
+    hour: Mapped[int] = mapped_column(Integer)

@@ -12,9 +12,10 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app import config, consola, models, seed  # noqa: F401  (models registra las tablas en Base.metadata)
+from app.services import analitica
 from app.database import Base, SessionLocal, activar_seguridad_por_filas, engine, get_db
 from app.errors import registrar_manejadores
-from app.routers import auth, certificates, files, profile, projects, public, tech_stack
+from app.routers import auth, certificates, files, profile, projects, public, sites, stats, tech_stack, track
 
 
 # Los mensajes de la API (avisos al pipeline, errores del almacén) salen en el registro del servidor con el prefijo "cms".
@@ -34,6 +35,13 @@ async def lifespan(app: FastAPI):
         raise RuntimeError("Configuración incompleta:\n- " + "\n- ".join(problemas))
     Base.metadata.create_all(engine)      # crea las tablas si todavía no existen
     activar_seguridad_por_filas(engine)   # solo en Postgres
+    try:                                  # las visitas muy viejas se borran (la base gratuita tiene poco espacio)
+        with SessionLocal() as db:
+            borradas = analitica.purgar_antiguas(db)
+        if borradas:
+            log.info("Visitas con más de %s días borradas: %s", config.ANALITICA_DIAS_RETENCION, borradas)
+    except Exception:                     # nunca debe impedir que la API arranque
+        log.exception("No se pudieron borrar las visitas antiguas")
     if config.SEMBRAR_SI_ESTA_VACIA:
         with SessionLocal() as db:
             if seed.base_vacia(db):
@@ -72,6 +80,9 @@ app = FastAPI(
         {"name": "Lenguajes y herramientas (administración)", "description": "Requieren token. Catálogo único que usan los proyectos."},
         {"name": "Perfil (administración)", "description": "Requiere token. Registro único: solo se edita."},
         {"name": "Archivos", "description": "Requiere token. Sube PDF e imágenes y devuelve su URL."},
+        {"name": "Sitios monitoreados (administración)", "description": "Requieren token. Los sitios cuyas visitas se cuentan; se pueden pausar."},
+        {"name": "Estadísticas (administración)", "description": "Requiere token. Visitas, visitantes, páginas y fuentes por periodo."},
+        {"name": "Monitoreo (público)", "description": "Sin token. Lo usa el script del blog para registrar visitas."},
         {"name": "Lecturas públicas", "description": "Sin autenticación. Con ETag y Cache-Control (max-age 60 s)."},
     ],
 )
@@ -104,6 +115,9 @@ app.include_router(tech_stack.router)
 app.include_router(profile.router)
 app.include_router(files.router)
 app.include_router(public.router)
+app.include_router(sites.router)
+app.include_router(stats.router)
+app.include_router(track.router)
 # Los archivos subidos se sirven en /media (check_dir=False: la carpeta se crea al subir el primer archivo).
 app.mount("/media", StaticFiles(directory=config.FILES_DIR, check_dir=False), name="media")
 # La consola de administración (admin/) se sirve en /admin/.
