@@ -499,3 +499,56 @@ class StatsOut(BaseModel):
     series: list[StatsPointOut]
     top_pages: list[StatsPageOut]
     referrers: list[StatsReferrerOut]
+
+
+# ================================================================= APARIENCIA del blog
+PresetClave = Literal["segope", "azul-noche", "verde-terminal", "violeta"]
+FuenteCuerpoClave = Literal["sistema", "serif", "humanista"]
+FuenteMonoClave = Literal["clasica", "moderna"]
+EsquinasClave = Literal["cuadradas", "normales", "redondeadas"]
+TamanoClave = Literal["pequeno", "normal", "grande"]
+
+
+class ThemeIn(BaseModel):
+    """PUT reemplaza la apariencia completa. `accent` en null = usar el color de acento del estilo."""
+    model_config = ConfigDict(extra="forbid")
+
+    preset: PresetClave
+    accent: ColorHex | None
+    font_body: FuenteCuerpoClave
+    font_mono: FuenteMonoClave
+    radius: EsquinasClave
+    text_size: TamanoClave
+
+
+class ThemeResolvedOut(BaseModel):
+    vars: dict[str, str]                        # variables CSS ya resueltas: lo que el generador escribe en CSS/tema.css
+    root_font_size: str
+    is_default: bool                            # true = idéntico al diseño original: el blog no necesita CSS extra
+
+
+class ThemeOut(BaseModel):
+    preset: PresetClave
+    accent: str | None
+    font_body: FuenteCuerpoClave
+    font_mono: FuenteMonoClave
+    radius: EsquinasClave
+    text_size: TamanoClave
+    resolved: ThemeResolvedOut
+    updated_at: FechaHoraUTC | None             # null = nunca se ha personalizado
+
+
+class ThemeUpdatedOut(ThemeOut):
+    recompilation_triggered: bool
+
+
+class ThemeOptionsOut(BaseModel):
+    presets: list[dict]
+    fonts_body: list[dict]
+    fonts_mono: list[dict]
+    radius: list[dict]
+    text_size: list[dict]
+    default: dict
+    accent_suggestions: list[str]
+    min_contrast_text: float
+    min_contrast_button: float

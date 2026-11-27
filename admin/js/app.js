@@ -8,6 +8,7 @@ import * as editorProyecto from './vistas/proyecto_editor.js';
 import * as certificados from './vistas/certificados.js';
 import * as catalogo from './vistas/catalogo.js';
 import * as perfil from './vistas/perfil.js';
+import * as apariencia from './vistas/apariencia.js';
 import * as estadisticas from './vistas/estadisticas.js';
 import * as sitios from './vistas/sitios.js';
 
@@ -18,6 +19,7 @@ const SECCIONES = [
   { clave: 'certificados', texto: 'Certificados', hash: '#/certificados' },
   { clave: 'catalogo', texto: 'Lenguajes y herramientas', hash: '#/catalogo' },
   { clave: 'perfil', texto: 'Perfil', hash: '#/perfil' },
+  { clave: 'apariencia', texto: 'Apariencia', hash: '#/apariencia' },
   { clave: 'estadisticas', texto: 'Estadísticas', hash: '#/estadisticas' },
   { clave: 'sitios', texto: 'Sitios', hash: '#/sitios' },
 ];
@@ -29,6 +31,7 @@ const RUTAS = [
   { patron: /^#\/certificados$/, seccion: 'certificados', vista: certificados, parametros: () => ({}) },
   { patron: /^#\/catalogo$/, seccion: 'catalogo', vista: catalogo, parametros: () => ({}) },
   { patron: /^#\/perfil$/, seccion: 'perfil', vista: perfil, parametros: () => ({}) },
+  { patron: /^#\/apariencia$/, seccion: 'apariencia', vista: apariencia, parametros: () => ({}) },
   { patron: /^#\/estadisticas$/, seccion: 'estadisticas', vista: estadisticas, parametros: () => ({}) },
   { patron: /^#\/sitios$/, seccion: 'sitios', vista: sitios, parametros: () => ({}) },
 ];

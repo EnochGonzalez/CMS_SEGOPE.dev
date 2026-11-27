@@ -172,3 +172,18 @@ class PageView(Base):
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora_utc)
     day: Mapped[date] = mapped_column(Date)            # día y hora LOCALES (ver ANALITICA_UTC_OFFSET_HORAS), para agrupar rápido
     hour: Mapped[int] = mapped_column(Integer)
+
+
+# ----------------------------------------------------------------- apariencia del blog
+class ThemeSettings(Base):
+    """Apariencia del blog. Registro único: mientras no exista, el blog conserva su diseño original (estilo «segope»)."""
+    __tablename__ = "theme_settings"
+
+    theme_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=nuevo_id)
+    preset: Mapped[str] = mapped_column(String(20), default="segope")
+    accent: Mapped[str | None] = mapped_column(String(7))                       # None = el color de acento del estilo
+    font_body: Mapped[str] = mapped_column(String(20), default="sistema")
+    font_mono: Mapped[str] = mapped_column(String(20), default="clasica")
+    radius: Mapped[str] = mapped_column(String(20), default="normales")
+    text_size: Mapped[str] = mapped_column(String(20), default="normal")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora_utc, onupdate=ahora_utc)

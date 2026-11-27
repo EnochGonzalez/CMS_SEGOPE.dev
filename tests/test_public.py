@@ -208,4 +208,5 @@ def test_documentacion_openapi_lista_todas_las_rutas(client):
              "/api/v1/tech-stack", "/api/v1/tech-stack/{stack_id}", "/api/v1/profile", "/api/v1/files"}
     # Mejora posterior a la especificación: monitoreo de visitas (sitios, estadísticas y registro público).
     monitoreo = {"/api/v1/sites", "/api/v1/sites/{site_id}", "/api/v1/stats", "/api/v1/track"}
-    assert rutas == publicas | admin | monitoreo
+    apariencia = {"/api/v1/public/theme", "/api/v1/public/theme/options", "/api/v1/theme"}      # mejora: apariencia del blog
+    assert rutas == publicas | admin | monitoreo | apariencia

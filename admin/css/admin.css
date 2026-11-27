@@ -360,3 +360,49 @@ a.boton { text-decoration: none; display: inline-flex; align-items: center; }
   .kpi__valor { font-size: 1.6rem; }
   .dos-columnas { grid-template-columns: 1fr; }
 }
+
+/* ===== Apariencia del blog ===== */
+.apariencia { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 25rem); gap: 1.25rem; align-items: start; }
+.apariencia__ajustes { display: grid; gap: 1rem; min-width: 0; }
+.apariencia__previa { position: sticky; top: 5rem; display: grid; gap: 0.6rem; min-width: 0; }
+.presets { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 0.6rem; }
+.preset { display: grid; gap: 0.5rem; justify-items: start; padding: 0.7rem; background: var(--bg-campo); border: 1px solid var(--line-strong); border-radius: var(--radius); color: var(--ink); font: inherit; cursor: pointer; text-align: left; }
+.preset:hover { border-color: var(--accent); }
+.preset[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.preset__muestras { display: flex; }
+.preset__punto { width: 1.4rem; height: 1.4rem; border-radius: 50%; border: 1px solid var(--line-strong); margin-right: -0.35rem; }
+.preset__nombre { font-size: 0.88rem; }
+.muestras { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 0.7rem 0; }
+.muestra { width: 2rem; height: 2rem; border-radius: 50%; border: 2px solid var(--line-strong); cursor: pointer; padding: 0; background: var(--bg-campo); }
+.muestra:hover { transform: scale(1.08); }
+.muestra[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--accent); }
+.muestra--estilo { background: repeating-linear-gradient(45deg, var(--bg-campo), var(--bg-campo) 4px, var(--line-strong) 4px, var(--line-strong) 8px); }
+.muestra-propia { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--ink-soft); }
+.entrada-color { width: 2.4rem; height: 2rem; padding: 0; border: 1px solid var(--line-strong); border-radius: var(--radius); background: transparent; cursor: pointer; }
+.contraste { font-size: 0.82rem; margin: 0.15rem 0; }
+.contraste--ok { color: var(--ok); }
+.contraste--mal { color: var(--error); }
+
+/* La vista previa define sus propias variables (con las mismas que usa el blog) y no hereda nada de la consola. */
+.vista-previa { --bg: #0c0404; --bg-elevated: #160808; --ink: #fff; --ink-soft: #a39898; --line: #301010; --line-strong: #4a1c1c; --accent: #ef4444; --accent-warm: #dc2626;
+  --font-body: 'Segoe UI', sans-serif; --font-mono: 'Courier New', monospace; --radius: 3px;
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 100%; border: 1px solid var(--line-strong); border-radius: var(--radius); overflow: hidden; line-height: 1.55; }
+.vp-cabecera { display: flex; justify-content: space-between; align-items: center; padding: 0.7em 1em; background: var(--bg-elevated); border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-size: 0.85em; }
+.vp-marca { font-weight: 700; } .vp-marca-sub { color: var(--accent); }
+.vp-nav { display: flex; gap: 1em; color: var(--ink-soft); }
+.vp-cuerpo { padding: 1.1em 1em 1.2em; display: grid; gap: 0.7em; }
+.vp-etiqueta { color: var(--accent); font-family: var(--font-mono); font-size: 0.82em; }
+.vp-titulo { font-size: 1.45em; line-height: 1.2; margin: 0; }
+.vp-texto { color: var(--ink-soft); font-size: 0.95em; margin: 0; }
+.vp-acciones { display: flex; flex-wrap: wrap; gap: 0.7em; align-items: center; }
+.vp-boton { background: var(--accent); color: #fff; padding: 0.45em 0.9em; border-radius: var(--radius); font-family: var(--font-mono); font-size: 0.85em; }
+.vp-boton:hover { background: var(--accent-warm); }
+.vp-codigo { font-family: var(--font-mono); font-size: 0.82em; background: var(--bg-elevated); border: 1px solid var(--line-strong); padding: 0.3em 0.6em; border-radius: var(--radius); }
+.vp-tarjeta { background: var(--bg-elevated); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.8em 0.9em; display: grid; gap: 0.3em; }
+.vp-tarjeta p { margin: 0; color: var(--ink-soft); font-size: 0.9em; }
+.vp-chip { justify-self: start; font-family: var(--font-mono); font-size: 0.75em; color: var(--accent); border: 1px solid var(--accent); padding: 0.1em 0.6em; border-radius: var(--radius); }
+
+@media (max-width: 960px) {
+  .apariencia { grid-template-columns: 1fr; }
+  .apariencia__previa { position: static; order: -1; }
+}

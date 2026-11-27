@@ -15,7 +15,7 @@ from app import config, consola, models, seed  # noqa: F401  (models registra la
 from app.services import analitica
 from app.database import Base, SessionLocal, activar_seguridad_por_filas, engine, get_db
 from app.errors import registrar_manejadores
-from app.routers import auth, certificates, files, profile, projects, public, sites, stats, tech_stack, track
+from app.routers import auth, certificates, files, profile, projects, public, sites, stats, tech_stack, theme, track
 
 
 # Los mensajes de la API (avisos al pipeline, errores del almacén) salen en el registro del servidor con el prefijo "cms".
@@ -82,6 +82,7 @@ app = FastAPI(
         {"name": "Archivos", "description": "Requiere token. Sube PDF e imágenes y devuelve su URL."},
         {"name": "Sitios monitoreados (administración)", "description": "Requieren token. Los sitios cuyas visitas se cuentan; se pueden pausar."},
         {"name": "Estadísticas (administración)", "description": "Requiere token. Visitas, visitantes, páginas y fuentes por periodo."},
+        {"name": "Apariencia (administración)", "description": "Requiere token. Estilo, color de acento y tipografías del blog; se aplican al regenerarlo."},
         {"name": "Monitoreo (público)", "description": "Sin token. Lo usa el script del blog para registrar visitas."},
         {"name": "Lecturas públicas", "description": "Sin autenticación. Con ETag y Cache-Control (max-age 60 s)."},
     ],
@@ -118,6 +119,8 @@ app.include_router(public.router)
 app.include_router(sites.router)
 app.include_router(stats.router)
 app.include_router(track.router)
+app.include_router(theme.publico)
+app.include_router(theme.router)
 # Los archivos subidos se sirven en /media (check_dir=False: la carpeta se crea al subir el primer archivo).
 app.mount("/media", StaticFiles(directory=config.FILES_DIR, check_dir=False), name="media")
 # La consola de administración (admin/) se sirve en /admin/.
